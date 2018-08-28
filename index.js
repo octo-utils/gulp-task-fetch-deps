@@ -46,8 +46,9 @@ const bundleTypeCheckers = [
   [u => /.+\.zip$/i.test(u), bundleExtractorZip]
 ]
 
-const noopChecker = [void 0, (read, distPath, sourceUrl) => {
-  return read.pipe(source(path.basename(sourceUrl))).pipe(vfs.dest(path.dirname(distPath)))
+const noopChecker = [void 0, (read, distPath, sourceUrl, options) => {
+  const name = options.name;
+  return read.pipe(source(path.basename(name || sourceUrl))).pipe(vfs.dest(path.dirname(distPath)))
 }]
 
 const depsToDownloadNames = argv.deps;
@@ -127,6 +128,8 @@ function processFetchDep(dep, checker, depFolder, depCacheFolder) {
   if (Array.isArray(name)) {
     namePath = name.join("/");
     name = name.join("@");
+  } else {
+    options.name = name;
   }
 
   const downloadFileName = name + "_" + path.basename(sourceUrl);
