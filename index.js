@@ -1,7 +1,7 @@
 "use strict";
 /**
  * stream based dependencies fetching task
- * version: 0.0.12
+ * version: 1.0.13
  * author: tommyZZM
  */
 // const fs = require("fs");
@@ -155,6 +155,12 @@ function processFetchDep(dep, checker, depFolder, depCacheFolder) {
       ]
     })
     .then(([cacheExits, read]) => {
+      if (read instanceof Promise) {
+        return read.then(readStream => [cacheExits, readStream])
+      }
+      return [cacheExits, read];
+    })
+    .then(([cacheExits, read]) => {
       log((cacheExits && !shouldForceDownload) ?
         `cache found ${downloadFileName} ...` :
         `fetching ${downloadFileName} from '${sourceUrl}' ...`
@@ -193,12 +199,16 @@ function downloadByWget(url, cachePath) {
   console.log(exec_wget);
   shelljs.cd(path.dirname(cachePath));
   // shelljs.exec(`wget -V`);
-  shelljs.exec(
+  const child = shelljs.exec(
     exec_wget,
-    {silent: false},
+    {silent: false, async: true},
   );
 
-  return fs.createReadStream(cachePath);
+  return new Promise(resolve => {
+    child.on("exit", _ => {
+      resolve(fs.createReadStream(cachePath))
+    })
+  });
 }
 
 /**
